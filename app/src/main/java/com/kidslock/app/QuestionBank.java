@@ -82,7 +82,7 @@ public class QuestionBank {
         }
     }
 
-    private static Question parseQuestion(JSONObject o) {
+    private static Question parseQuestion(JSONObject o) throws Exception {
         Question q = new Question();
         q.id = o.optString("id");
         q.subject = o.optString("subject");
