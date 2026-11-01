@@ -14,6 +14,9 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.List;
 
 /**
@@ -35,6 +38,9 @@ public class LockScreenActivity extends AppCompatActivity {
     private int requiredCount;
     private QuestionBank.Question current;
     private List<String> currentOptions;
+
+    // 答题结果（用于回传 NAS 后台更新掌握度）
+    private final JSONArray resultsJson = new JSONArray();
 
     // Views
     private View layoutMain;
@@ -120,11 +126,41 @@ public class LockScreenActivity extends AppCompatActivity {
     // ==================== 出题 ====================
 
     private void loadRound() {
+        // 在线模式：后台线程拉题（Android 6+ 禁止主线程网络）；失败自动回退内置题库
+        if (pref.isOnline() && !pref.getServerUrl().isEmpty() && !pref.getChildId().isEmpty()) {
+            final String serverUrl = pref.getServerUrl();
+            final String childId = pref.getChildId();
+            final String edition = pref.getEdition();
+            final int grade = pref.getGrade();
+            tvStem.setText("正在加载题目…");
+            tvProgress.setText("");
+            for (Button b : optionButtons) b.setVisibility(View.GONE);
+            new Thread(() -> {
+                final List<QuestionBank.Question> remote =
+                        QuestionBank.fetchRoundFromServer(serverUrl, childId, grade, edition, requiredCount);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (remote != null && !remote.isEmpty()) {
+                        round = remote;
+                        roundIndex = 0;
+                        loadCurrent();
+                    } else {
+                        loadLocalRound(); // 网络失败 → 回退内置题库，保证离线可用
+                    }
+                });
+            }).start();
+        } else {
+            loadLocalRound();
+        }
+    }
+
+    /** 内置题库（离线）出题。 */
+    private void loadLocalRound() {
         int grade = pref.getGrade();
         List<String> subjects = bank.gradeSubjects(grade);
         round = bank.getRound(grade, subjects, requiredCount, pref.getMasteryJson());
         if (round.isEmpty()) {
-            // 题库为空（不该发生）：直接放行，避免把孩子锁死
+            // 题库为空（不该发生）：避免把孩子锁死，提示家长
             tvStem.setText("暂无题目，请联系家长添加题库。");
             tvProgress.setText("");
             for (Button b : optionButtons) b.setVisibility(View.GONE);
@@ -158,6 +194,7 @@ public class LockScreenActivity extends AppCompatActivity {
 
         String selected = currentOptions.get(index);
         boolean correct = selected.equals(current.answer);
+        recordResult(current.knowledge, correct);
 
         if (correct) {
             pref.recordAnswer(current.knowledge, true);
@@ -167,7 +204,7 @@ public class LockScreenActivity extends AppCompatActivity {
             tvFeedback.setVisibility(View.VISIBLE);
 
             roundIndex++;
-            if (roundIndex >= requiredCount) {
+            if (roundIndex >= round.size()) {
                 handler.postDelayed(this::unlockChild, 700); // 本轮全对 → 解锁
             } else {
                 handler.postDelayed(this::loadCurrent, 900);
@@ -195,7 +232,19 @@ public class LockScreenActivity extends AppCompatActivity {
     }
 
     private void updateProgress() {
-        tvProgress.setText("第 " + (roundIndex + 1) + "/" + requiredCount + " 题 · 本轮全部答对即可解锁");
+        int total = round != null ? round.size() : requiredCount;
+        tvProgress.setText("第 " + (roundIndex + 1) + "/" + total + " 题 · 本轮全部答对即可解锁");
+    }
+
+    /** 记录一次答题结果，用于本轮结束后回传后台。 */
+    private void recordResult(String knowledge, boolean correct) {
+        try {
+            JSONObject r = new JSONObject();
+            r.put("knowledge", knowledge == null ? "" : knowledge);
+            r.put("correct", correct);
+            resultsJson.put(r);
+        } catch (Exception ignore) {
+        }
     }
 
     // ==================== 解锁 ====================
@@ -205,9 +254,20 @@ public class LockScreenActivity extends AppCompatActivity {
         pref.setLocked(false);
         pref.setHomeAliasEnabled(this, false);
         pref.resetPinFailures();
+        submitIfOnline();
         pref.startTimer(pref.getIntervalMinutes()); // 启动自由窗口计时
         LockService.requestFreeWindow(this);        // 隐藏悬浮窗，继续守护（到点再锁）
         finishAffinity();
+    }
+
+    /** 在线模式：把本轮答题结果回传后台更新掌握度（后台线程，静默失败）。 */
+    private void submitIfOnline() {
+        if (!pref.isOnline() || pref.getServerUrl().isEmpty() || pref.getChildId().isEmpty()) return;
+        if (resultsJson.length() == 0) return;
+        final String serverUrl = pref.getServerUrl();
+        final String childId = pref.getChildId();
+        final String payload = resultsJson.toString();
+        new Thread(() -> QuestionBank.submitResults(serverUrl, childId, payload)).start();
     }
 
     /** 家长 PIN 解锁：临时放行（保持孩子模式，进入自由窗口，到点再锁）。 */

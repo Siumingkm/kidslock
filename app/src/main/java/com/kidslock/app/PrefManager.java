@@ -36,6 +36,9 @@ public class PrefManager {
     private static final String KEY_GRADE = "grade";
     private static final String KEY_EDITION = "edition";
     private static final String KEY_MASTERY = "mastery_json";
+    private static final String KEY_ONLINE = "online_enabled";
+    private static final String KEY_SERVER_URL = "server_url";
+    private static final String KEY_CHILD_ID = "child_id";
 
     // Defaults
     private static final boolean DEFAULT_AUTO_START = true;
@@ -88,6 +91,34 @@ public class PrefManager {
 
     public void setEdition(String edition) {
         prefs.edit().putString(KEY_EDITION, edition).apply();
+    }
+
+    // --- 在线题库（NAS 后台）---
+    /** 是否启用联网拉题（关闭则用内置题库）。 */
+    public boolean isOnline() {
+        return prefs.getBoolean(KEY_ONLINE, false);
+    }
+
+    public void setOnline(boolean enabled) {
+        prefs.edit().putBoolean(KEY_ONLINE, enabled).apply();
+    }
+
+    /** NAS 后台地址，如 http://192.168.1.10:8000（可为空=未配置）。 */
+    public String getServerUrl() {
+        return prefs.getString(KEY_SERVER_URL, "");
+    }
+
+    public void setServerUrl(String url) {
+        prefs.edit().putString(KEY_SERVER_URL, url == null ? "" : url).apply();
+    }
+
+    /** 孩子ID（后台 /api/next 用；后台会在缺失时自动创建）。 */
+    public String getChildId() {
+        return prefs.getString(KEY_CHILD_ID, "");
+    }
+
+    public void setChildId(String childId) {
+        prefs.edit().putString(KEY_CHILD_ID, childId == null ? "" : childId).apply();
     }
 
     // --- Interval (自由观看窗口，分钟) ---

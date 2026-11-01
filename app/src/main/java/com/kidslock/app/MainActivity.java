@@ -10,6 +10,7 @@ import android.os.Looper;
 import android.text.InputType;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,8 +30,10 @@ public class MainActivity extends AppCompatActivity {
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     private TextView tvStatus, tvRemaining, tvMode, tvGrade, tvSubjects, tvInterval, tvUnlockCount;
+    private TextView tvOnline;
     private Button btnModeToggle, btnGradeDown, btnGradeUp;
     private Button btnEnableChild, btnEnableParent;
+    private Button btnConfigOnline, btnToggleOnline;
 
     private final Runnable updateRunnable = new Runnable() {
         @Override
@@ -86,6 +89,9 @@ public class MainActivity extends AppCompatActivity {
         btnGradeUp = findViewById(R.id.btnGradeUp);
         btnEnableChild = findViewById(R.id.btnEnableChild);
         btnEnableParent = findViewById(R.id.btnEnableParent);
+        tvOnline = findViewById(R.id.tvOnline);
+        btnConfigOnline = findViewById(R.id.btnConfigOnline);
+        btnToggleOnline = findViewById(R.id.btnToggleOnline);
     }
 
     private void setupListeners() {
@@ -125,6 +131,24 @@ public class MainActivity extends AppCompatActivity {
                 toast("解锁题数设为 " + count + " 题");
             });
         }
+
+        // 在线题库（NAS 后台）
+        btnConfigOnline.setOnClickListener(v -> showServerDialog());
+        btnToggleOnline.setOnClickListener(v -> {
+            if (pref.isOnline()) {
+                pref.setOnline(false);
+                toast("已关闭联网拉题，改用内置题库");
+            } else {
+                if (pref.getServerUrl().isEmpty() || pref.getChildId().isEmpty()) {
+                    toast("请先配置服务器地址与孩子ID");
+                    showServerDialog();
+                    return;
+                }
+                pref.setOnline(true);
+                toast("已开启联网拉题");
+            }
+            updateStatus();
+        });
 
         // PIN
         findViewById(R.id.btnSetPin).setOnClickListener(v -> showPinDialog());
@@ -176,6 +200,58 @@ public class MainActivity extends AppCompatActivity {
         builder.show();
     }
 
+    private void showServerDialog() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(24), dp(8), dp(24), 0);
+
+        final EditText etUrl = new EditText(this);
+        etUrl.setHint("服务器地址，如 http://192.168.1.10:8000");
+        etUrl.setText(pref.getServerUrl());
+        etUrl.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+
+        final EditText etChild = new EditText(this);
+        etChild.setHint("孩子ID（自定义，如 ming）");
+        etChild.setText(pref.getChildId());
+        etChild.setInputType(InputType.TYPE_CLASS_TEXT);
+
+        box.addView(etUrl);
+        box.addView(etChild);
+
+        new AlertDialog.Builder(this)
+                .setTitle("配置在线题库（NAS 后台）")
+                .setView(box)
+                .setPositiveButton("保存并测试", (d, w) -> {
+                    String url = etUrl.getText().toString().trim();
+                    String child = etChild.getText().toString().trim();
+                    if (url.isEmpty() || child.isEmpty()) {
+                        toast("地址与孩子ID都不能为空");
+                        return;
+                    }
+                    pref.setServerUrl(url);
+                    pref.setChildId(child);
+                    pref.setOnline(true);
+                    updateStatus();
+                    testServer(url, child);
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void testServer(final String url, final String child) {
+        final int grade = pref.getGrade();
+        final String edition = pref.getEdition();
+        toast("测试连接中…");
+        new Thread(() -> {
+            List<QuestionBank.Question> r = QuestionBank.fetchRoundFromServer(url, child, grade, edition, 1);
+            runOnUiThread(() -> toast(r != null && !r.isEmpty() ? "连接成功，已能拉取题目" : "连接失败，请检查地址/后台是否启动"));
+        }).start();
+    }
+
+    private int dp(int v) {
+        return (int) (v * getResources().getDisplayMetrics().density);
+    }
+
     private void startLockService() {
         Intent serviceIntent = new Intent(this, LockService.class);
         serviceIntent.putExtra("action", "start_timer");
@@ -196,7 +272,7 @@ public class MainActivity extends AppCompatActivity {
         int grade = pref.getGrade();
         tvGrade.setText("当前年级：" + gradeLabel(grade) + "（教材：" + pref.getEdition() + "）");
         List<String> subs = bank.gradeSubjects(grade);
-        tvSubjects.setText("科目范围：" + String.join("、", subs));
+        tvSubjects.setText("科目范围：" + join(subs, "、"));
 
         // 间隔 / 题数
         tvInterval.setText("出题间隔（自由观看）：" + pref.getIntervalMinutes() + " 分钟");
@@ -223,6 +299,15 @@ public class MainActivity extends AppCompatActivity {
             tvStatus.setTextColor(getResources().getColor(R.color.text_secondary));
             tvRemaining.setText("");
         }
+
+        // 在线题库状态
+        if (tvOnline != null) {
+            if (pref.isOnline() && !pref.getServerUrl().isEmpty()) {
+                tvOnline.setText("在线题库：开启 · " + pref.getServerUrl() + " · 孩子ID=" + pref.getChildId());
+            } else {
+                tvOnline.setText("在线题库：关闭（使用内置题库）");
+            }
+        }
     }
 
     private static String gradeLabel(int grade) {
@@ -233,6 +318,16 @@ public class MainActivity extends AppCompatActivity {
             case 9: return "初三";
             default: return grade + "年级";
         }
+    }
+
+    /** 手动拼接（String.join 需 API 26，Android 6.0/API 23 不可用）。 */
+    private static String join(List<String> list, String sep) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < list.size(); i++) {
+            if (i > 0) sb.append(sep);
+            sb.append(list.get(i));
+        }
+        return sb.toString();
     }
 
     private void toast(String msg) {
