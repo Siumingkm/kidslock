@@ -12,7 +12,6 @@
         android:padding="@dimen/tv_margin_h"
         android:gravity="center_horizontal">
 
-        <!-- 标题 -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -22,7 +21,6 @@
             android:textStyle="bold"
             android:layout_marginBottom="@dimen/spacing_medium" />
 
-        <!-- 状态 -->
         <TextView
             android:id="@+id/tvStatus"
             android:layout_width="wrap_content"
@@ -39,100 +37,98 @@
             android:textSize="@dimen/text_body"
             android:layout_marginBottom="@dimen/spacing_large" />
 
-        <!-- ===== 计时控制 ===== -->
+        <!-- ===== 运行模式 ===== -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/section_timer"
+            android:text="运行模式"
             android:textColor="@color/highlight"
             android:textSize="@dimen/text_subtitle"
             android:layout_marginBottom="@dimen/spacing_small" />
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="@dimen/spacing_medium">
-
-            <Button
-                android:id="@+id/btnStartTimer"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="@dimen/btn_min_width"
-                android:text="@string/btn_start_timer"
-                android:textSize="@dimen/text_button"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
-
-            <Button
-                android:id="@+id/btnStopTimer"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="@dimen/btn_min_width"
-                android:text="@string/btn_stop_timer"
-                android:textSize="@dimen/text_button"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
-
-            <Button
-                android:id="@+id/btnLockNow"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="@dimen/btn_min_width"
-                android:text="@string/btn_lock_now"
-                android:textSize="@dimen/text_button"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
-
-            <Button
-                android:id="@+id/btnUnlock"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="@dimen/btn_min_width"
-                android:text="@string/btn_unlock"
-                android:textSize="@dimen/text_button"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
-        </LinearLayout>
-
-        <!-- ===== 参数配置 ===== -->
         <TextView
+            android:id="@+id/tvMode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/section_config"
-            android:textColor="@color/highlight"
-            android:textSize="@dimen/text_subtitle"
-            android:layout_marginTop="@dimen/spacing_large"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_body"
             android:layout_marginBottom="@dimen/spacing_small" />
 
-        <!-- 开机自启 -->
         <Button
-            android:id="@+id/btnAutoStart"
+            android:id="@+id/btnModeToggle"
             android:layout_width="wrap_content"
             android:layout_height="@dimen/btn_height"
             android:layout_marginBottom="@dimen/spacing_medium"
             android:minWidth="300dp"
+            android:text="切换模式"
             android:textSize="@dimen/text_button"
             android:background="@drawable/btn_settings_bg"
             android:textColor="@color/btn_text"
             android:focusable="true"
             android:clickable="true" />
 
-        <!-- 观看时长 -->
+        <!-- ===== 孩子信息 ===== -->
         <TextView
-            android:id="@+id/tvWatchTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="孩子信息（按此出题）"
+            android:textColor="@color/highlight"
+            android:textSize="@dimen/text_subtitle"
+            android:layout_marginTop="@dimen/spacing_large"
+            android:layout_marginBottom="@dimen/spacing_small" />
+
+        <TextView
+            android:id="@+id/tvGrade"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_body"
+            android:layout_marginBottom="@dimen/spacing_small" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="@dimen/spacing_small">
+
+            <Button android:id="@+id/btnGradeDown"
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="80dp"
+                android:text="− 降年级"
+                android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg"
+                android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
+            <Button android:id="@+id/btnGradeUp"
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="80dp"
+                android:text="升年级 +"
+                android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg"
+                android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvSubjects"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_secondary"
+            android:textSize="@dimen/text_body"
+            android:layout_marginBottom="@dimen/spacing_medium" />
+
+        <!-- ===== 出题设置 ===== -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="出题设置"
+            android:textColor="@color/highlight"
+            android:textSize="@dimen/text_subtitle"
+            android:layout_marginTop="@dimen/spacing_large"
+            android:layout_marginBottom="@dimen/spacing_small" />
+
+        <TextView
+            android:id="@+id/tvInterval"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/text_primary"
@@ -145,75 +141,50 @@
             android:orientation="horizontal"
             android:layout_marginBottom="@dimen/spacing_medium">
 
-            <Button android:id="@+id/btnTime15"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="80dp"
-                android:text="15分钟"
-                android:textSize="@dimen/text_body"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
-            <Button android:id="@+id/btnTime30"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="80dp"
-                android:text="30分钟"
-                android:textSize="@dimen/text_body"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
-            <Button android:id="@+id/btnTime45"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="80dp"
-                android:text="45分钟"
-                android:textSize="@dimen/text_body"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
-            <Button android:id="@+id/btnTime60"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="80dp"
-                android:text="60分钟"
-                android:textSize="@dimen/text_body"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
-            <Button android:id="@+id/btnTime90"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="80dp"
-                android:text="90分钟"
-                android:textSize="@dimen/text_body"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
-            <Button android:id="@+id/btnTime120"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="80dp"
-                android:text="120分钟"
-                android:textSize="@dimen/text_body"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
+            <Button android:id="@+id/btnInt10"
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="70dp"
+                android:text="10分" android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg" android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
+            <Button android:id="@+id/btnInt15"
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="70dp"
+                android:text="15分" android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg" android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
+            <Button android:id="@+id/btnInt30"
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="70dp"
+                android:text="30分" android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg" android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
+            <Button android:id="@+id/btnInt45"
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="70dp"
+                android:text="45分" android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg" android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
+            <Button android:id="@+id/btnInt60"
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="70dp"
+                android:text="60分" android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg" android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
+            <Button android:id="@+id/btnInt90"
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="70dp"
+                android:text="90分" android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg" android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
+            <Button android:id="@+id/btnInt120"
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="70dp"
+                android:text="120分" android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg" android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
         </LinearLayout>
 
-        <!-- 解锁题数 -->
         <TextView
             android:id="@+id/tvUnlockCount"
             android:layout_width="wrap_content"
@@ -229,41 +200,26 @@
             android:layout_marginBottom="@dimen/spacing_medium">
 
             <Button android:id="@+id/btnUnlock3"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="80dp"
-                android:text="3题"
-                android:textSize="@dimen/text_body"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="80dp"
+                android:text="3题" android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg" android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
             <Button android:id="@+id/btnUnlock5"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="80dp"
-                android:text="5题"
-                android:textSize="@dimen/text_body"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="80dp"
+                android:text="5题" android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg" android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
             <Button android:id="@+id/btnUnlock10"
-                android:layout_width="wrap_content"
-                android:layout_height="@dimen/btn_height"
-                android:layout_margin="@dimen/btn_margin"
-                android:minWidth="80dp"
-                android:text="10题"
-                android:textSize="@dimen/text_body"
-                android:background="@drawable/btn_settings_bg"
-                android:textColor="@color/btn_text"
-                android:focusable="true"
-                android:clickable="true" />
+                android:layout_width="wrap_content" android:layout_height="@dimen/btn_height"
+                android:layout_margin="@dimen/btn_margin" android:minWidth="80dp"
+                android:text="10题" android:textSize="@dimen/text_body"
+                android:background="@drawable/btn_settings_bg" android:textColor="@color/btn_text"
+                android:focusable="true" android:clickable="true" />
         </LinearLayout>
 
-        <!-- 设置PIN -->
+        <!-- ===== 家长 PIN ===== -->
         <Button
             android:id="@+id/btnSetPin"
             android:layout_width="wrap_content"
@@ -277,23 +233,50 @@
             android:focusable="true"
             android:clickable="true" />
 
-        <!-- 说明文字 -->
+        <!-- ===== 操作 ===== -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="默认PIN码：1234"
-            android:textColor="@color/text_secondary"
-            android:textSize="@dimen/text_body"
-            android:layout_marginTop="@dimen/spacing_large" />
+            android:text="操作"
+            android:textColor="@color/highlight"
+            android:textSize="@dimen/text_subtitle"
+            android:layout_marginTop="@dimen/spacing_large"
+            android:layout_marginBottom="@dimen/spacing_small" />
+
+        <Button
+            android:id="@+id/btnEnableChild"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/btn_height"
+            android:layout_margin="@dimen/btn_margin"
+            android:minWidth="300dp"
+            android:text="开启孩子模式（立即锁屏）"
+            android:textSize="@dimen/text_button"
+            android:background="@drawable/btn_settings_bg"
+            android:textColor="@color/btn_text"
+            android:focusable="true"
+            android:clickable="true" />
+
+        <Button
+            android:id="@+id/btnEnableParent"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/btn_height"
+            android:layout_margin="@dimen/btn_margin"
+            android:minWidth="300dp"
+            android:text="切换到家长模式（解锁）"
+            android:textSize="@dimen/text_button"
+            android:background="@drawable/btn_settings_bg"
+            android:textColor="@color/btn_text"
+            android:focusable="true"
+            android:clickable="true" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="计时开始后，到时自动锁屏\n重启电视后仍保持锁屏\n解锁需连续答对五年级水平汉字"
+            android:text="默认PIN码：1234，请尽快修改\n家长解锁后将切换到家长模式（不再弹题）"
             android:textColor="@color/text_secondary"
             android:textSize="@dimen/text_body"
             android:gravity="center"
-            android:layout_marginTop="@dimen/spacing_small"
+            android:layout_marginTop="@dimen/spacing_large"
             android:lineSpacingExtra="4dp" />
 
     </LinearLayout>

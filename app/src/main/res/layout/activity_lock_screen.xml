@@ -23,24 +23,26 @@
             android:textStyle="bold"
             android:layout_marginBottom="@dimen/spacing_small" />
 
-        <!-- 汉字显示 -->
+        <!-- 题干 -->
         <TextView
-            android:id="@+id/tvCharacter"
+            android:id="@+id/tvStem"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/text_primary"
-            android:textSize="@dimen/text_hanzi"
+            android:textSize="40sp"
             android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginHorizontal="@dimen/tv_margin_h"
             android:layout_marginVertical="@dimen/spacing_medium" />
 
-        <!-- 提问 -->
+        <!-- 科目 · 单元 -->
         <TextView
+            android:id="@+id/tvSubject"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/what_pronounce"
-            android:textColor="@color/text_secondary"
+            android:textColor="@color/highlight"
             android:textSize="@dimen/text_subtitle"
-            android:layout_marginBottom="@dimen/spacing_large" />
+            android:layout_marginBottom="@dimen/spacing_small" />
 
         <!-- 选项按钮 -->
         <LinearLayout

@@ -8,8 +8,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.InputType;
-import android.view.View;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -17,21 +15,22 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.List;
+
 /**
- * 设置主界面。
- * 家长可以在这里配置：开机自启、观看时长、解锁题数、家长PIN码。
- * 还可以开始/停止计时、立即锁屏、查看剩余时间。
+ * 设置主界面（改造版）。
+ * 家长可配置：运行模式、孩子年级/科目、出题间隔、解锁题数、PIN。
+ * 并可在"孩子模式/家长模式"之间切换。
  */
 public class MainActivity extends AppCompatActivity {
 
     private PrefManager pref;
+    private QuestionBank bank;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    private TextView tvStatus;
-    private TextView tvRemaining;
-    private Button btnAutoStart;
-    private TextView tvWatchTime;
-    private TextView tvUnlockCount;
+    private TextView tvStatus, tvRemaining, tvMode, tvGrade, tvSubjects, tvInterval, tvUnlockCount;
+    private Button btnModeToggle, btnGradeDown, btnGradeUp;
+    private Button btnEnableChild, btnEnableParent;
 
     private final Runnable updateRunnable = new Runnable() {
         @Override
@@ -45,8 +44,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         pref = new PrefManager(this);
+        bank = QuestionBank.loadFromAssets(this);
 
-        // 如果当前处于锁屏状态，禁止进入设置页（防止从桌面图标绕过锁屏解锁）
+        // 锁屏状态下禁止进入设置（防绕过）
         if (pref.isLocked()) {
             Intent lockIntent = new Intent(this, LockScreenActivity.class);
             lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -56,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_main);
-
         initViews();
         setupListeners();
         updateStatus();
@@ -77,34 +76,45 @@ public class MainActivity extends AppCompatActivity {
     private void initViews() {
         tvStatus = findViewById(R.id.tvStatus);
         tvRemaining = findViewById(R.id.tvRemaining);
-        btnAutoStart = findViewById(R.id.btnAutoStart);
-        tvWatchTime = findViewById(R.id.tvWatchTime);
+        tvMode = findViewById(R.id.tvMode);
+        tvGrade = findViewById(R.id.tvGrade);
+        tvSubjects = findViewById(R.id.tvSubjects);
+        tvInterval = findViewById(R.id.tvInterval);
         tvUnlockCount = findViewById(R.id.tvUnlockCount);
+        btnModeToggle = findViewById(R.id.btnModeToggle);
+        btnGradeDown = findViewById(R.id.btnGradeDown);
+        btnGradeUp = findViewById(R.id.btnGradeUp);
+        btnEnableChild = findViewById(R.id.btnEnableChild);
+        btnEnableParent = findViewById(R.id.btnEnableParent);
     }
 
     private void setupListeners() {
-        // 开机自启
-        btnAutoStart.setOnClickListener(v -> {
-            boolean newVal = !pref.isAutoStart();
-            pref.setAutoStart(newVal);
+        // 模式切换
+        btnModeToggle.setOnClickListener(v -> {
+            String next = pref.isChildMode() ? PrefManager.MODE_PARENT : PrefManager.MODE_CHILD;
+            pref.setMode(next);
             updateStatus();
-            toast(newVal ? "已开启开机自启" : "已关闭开机自启");
+            toast(next.equals(PrefManager.MODE_CHILD) ? "已切换到孩子模式" : "已切换到家长模式");
         });
 
-        // 观看时长预设
-        int[] timeButtons = {R.id.btnTime15, R.id.btnTime30, R.id.btnTime45,
-                R.id.btnTime60, R.id.btnTime90, R.id.btnTime120};
-        int[] timeValues = {15, 30, 45, 60, 90, 120};
-        for (int i = 0; i < timeButtons.length; i++) {
-            final int minutes = timeValues[i];
-            findViewById(timeButtons[i]).setOnClickListener(v -> {
-                pref.setWatchLimitMinutes(minutes);
+        // 年级调整（1~9）
+        btnGradeDown.setOnClickListener(v -> { pref.setGrade(Math.max(1, pref.getGrade() - 1)); updateStatus(); });
+        btnGradeUp.setOnClickListener(v -> { pref.setGrade(Math.min(9, pref.getGrade() + 1)); updateStatus(); });
+
+        // 出题间隔
+        int[] intButtons = {R.id.btnInt10, R.id.btnInt15, R.id.btnInt30, R.id.btnInt45,
+                R.id.btnInt60, R.id.btnInt90, R.id.btnInt120};
+        int[] intValues = {10, 15,30,45,60,90,120};
+        for (int i = 0; i < intButtons.length; i++) {
+            final int mins = intValues[i];
+            findViewById(intButtons[i]).setOnClickListener(v -> {
+                pref.setIntervalMinutes(mins);
                 updateStatus();
-                toast("观看时长设为 " + minutes + " 分钟");
+                toast("出题间隔设为 " + mins + " 分钟");
             });
         }
 
-        // 解锁题数预设
+        // 解锁题数
         int[] countButtons = {R.id.btnUnlock3, R.id.btnUnlock5, R.id.btnUnlock10};
         int[] countValues = {3, 5, 10};
         for (int i = 0; i < countButtons.length; i++) {
@@ -116,28 +126,12 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // 设置PIN码
+        // PIN
         findViewById(R.id.btnSetPin).setOnClickListener(v -> showPinDialog());
 
-        // 开始计时
-        findViewById(R.id.btnStartTimer).setOnClickListener(v -> {
-            int minutes = pref.getWatchLimitMinutes();
-            pref.startTimer(minutes);
-            startLockService();
-            toast("计时开始：" + minutes + " 分钟后锁屏");
-            updateStatus();
-        });
-
-        // 停止计时
-        findViewById(R.id.btnStopTimer).setOnClickListener(v -> {
-            pref.stopTimer();
-            stopService(new Intent(this, LockService.class));
-            toast("计时已停止");
-            updateStatus();
-        });
-
-        // 立即锁屏
-        findViewById(R.id.btnLockNow).setOnClickListener(v -> {
+        // 开启孩子模式（立即锁屏）
+        btnEnableChild.setOnClickListener(v -> {
+            pref.setMode(PrefManager.MODE_CHILD);
             pref.setLocked(true);
             pref.setHomeAliasEnabled(this, true);
             pref.stopTimer();
@@ -147,11 +141,14 @@ public class MainActivity extends AppCompatActivity {
             startActivity(lockIntent);
         });
 
-        // 立即解锁（如果在锁屏状态，从设置页解锁）
-        findViewById(R.id.btnUnlock).setOnClickListener(v -> {
+        // 切换到家长模式（解锁）
+        btnEnableParent.setOnClickListener(v -> {
+            pref.setMode(PrefManager.MODE_PARENT);
             pref.setLocked(false);
             pref.setHomeAliasEnabled(this, false);
-            toast("已解锁");
+            pref.stopTimer();
+            stopService(new Intent(this, LockService.class));
+            toast("已切换到家长模式，不再弹题");
             updateStatus();
         });
     }
@@ -190,13 +187,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateStatus() {
-        // 开机自启
-        btnAutoStart.setText(pref.isAutoStart() ? "开机自启：已开启" : "开机自启：已关闭");
+        // 模式
+        boolean child = pref.isChildMode();
+        tvMode.setText("当前模式：" + (child ? "孩子模式（答题解锁）" : "家长模式（不弹题）"));
+        btnModeToggle.setText(child ? "切换到家长模式" : "切换到孩子模式");
 
-        // 观看时长
-        tvWatchTime.setText("观看时长：" + pref.getWatchLimitMinutes() + " 分钟");
+        // 年级 / 科目
+        int grade = pref.getGrade();
+        tvGrade.setText("当前年级：" + gradeLabel(grade) + "（教材：" + pref.getEdition() + "）");
+        List<String> subs = bank.gradeSubjects(grade);
+        tvSubjects.setText("科目范围：" + String.join("、", subs));
 
-        // 解锁题数
+        // 间隔 / 题数
+        tvInterval.setText("出题间隔（自由观看）：" + pref.getIntervalMinutes() + " 分钟");
         tvUnlockCount.setText("解锁题数：" + pref.getUnlockCount() + " 道连续答对");
 
         // 状态
@@ -210,17 +213,25 @@ public class MainActivity extends AppCompatActivity {
                 tvStatus.setText("当前状态：时间到");
                 tvStatus.setTextColor(getResources().getColor(R.color.wrong_red));
             } else {
-                tvStatus.setText("当前状态：计时中");
-                tvStatus.setTextColor(getResources().getColor(R.color.correct_green));
                 long totalSec = remaining / 1000;
-                long min = totalSec / 60;
-                long sec = totalSec % 60;
-                tvRemaining.setText("剩余时间：" + String.format("%02d:%02d", min, sec));
+                tvStatus.setText("当前状态：自由观看中");
+                tvStatus.setTextColor(getResources().getColor(R.color.correct_green));
+                tvRemaining.setText("距下次答题：" + String.format("%02d:%02d", totalSec / 60, totalSec % 60));
             }
         } else {
-            tvStatus.setText("当前状态：未计时");
+            tvStatus.setText("当前状态：待命");
             tvStatus.setTextColor(getResources().getColor(R.color.text_secondary));
             tvRemaining.setText("");
+        }
+    }
+
+    private static String gradeLabel(int grade) {
+        if (grade <= 6) return "小学" + grade + "年级";
+        switch (grade) {
+            case 7: return "初一";
+            case 8: return "初二";
+            case 9: return "初三";
+            default: return grade + "年级";
         }
     }
 

@@ -98,6 +98,14 @@ public class LockService extends Service {
     // ==================== 计时模式 ====================
 
     private void startTicking() {
+        // 切换到计时（自由窗口）模式时，先停掉锁屏守护
+        if (watchdogRunnable != null) {
+            handler.removeCallbacks(watchdogRunnable);
+            watchdogRunnable = null;
+        }
+        if (tickRunnable != null) {
+            handler.removeCallbacks(tickRunnable);
+        }
         tickRunnable = new Runnable() {
             @Override
             public void run() {
@@ -259,7 +267,7 @@ public class LockService extends Service {
     }
 
     /**
-     * 解锁时由 LockScreenActivity 调用，彻底移除悬浮窗和停止服务。
+     * 解锁时由 LockScreenActivity 调用，彻底移除悬浮窗和停止服务（家长模式）。
      */
     public static void requestUnlock(Context context) {
         Intent intent = new Intent(context, LockService.class);
@@ -267,11 +275,29 @@ public class LockService extends Service {
         context.startService(intent);
     }
 
+    /**
+     * 孩子模式通关后调用：隐藏悬浮窗，进入"自由观看"计时（到点再锁），
+     * 服务继续保持运行。
+     */
+    public static void requestFreeWindow(Context context) {
+        Intent intent = new Intent(context, LockService.class);
+        intent.setAction("com.kidslock.app.ACTION_FREE_WINDOW");
+        context.startService(intent);
+    }
+
     @Override
     public void onStart(Intent intent, int startId) {
         super.onStart(intent, startId);
-        if (intent != null && "com.kidslock.app.ACTION_UNLOCK".equals(intent.getAction())) {
+        if (intent == null) return;
+        if ("com.kidslock.app.ACTION_UNLOCK".equals(intent.getAction())) {
             unlockAndStop();
+        } else if ("com.kidslock.app.ACTION_FREE_WINDOW".equals(intent.getAction())) {
+            // 隐藏悬浮窗；非锁屏且计时活跃 → 进入自由窗口计时
+            hideOverlay();
+            if (!pref.isLocked() && pref.isTimerActive()) {
+                startTicking();
+            }
+            updateNotification();
         }
     }
 
@@ -305,10 +331,12 @@ public class LockService extends Service {
     private Notification buildNotification() {
         String contentText;
         if (pref.isLocked()) {
-            contentText = "电视已锁定，答对汉字即可解锁";
-        } else {
+            contentText = "电视已锁定，答对题目即可解锁";
+        } else if (pref.isTimerActive()) {
             long remaining = pref.getRemainingMillis();
-            contentText = "剩余观看时间：" + formatTime(remaining);
+            contentText = "自由观看中，剩余：" + formatTime(remaining) + " 后答题";
+        } else {
+            contentText = "儿童锁屏待命";
         }
 
         Intent openIntent = new Intent(this, MainActivity.class);

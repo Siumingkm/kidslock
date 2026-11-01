@@ -1,80 +1,73 @@
-# 儿童锁屏 · 电视认字锁屏
+# 儿童锁屏 · 电视答题锁屏（家长/孩子模式）
 
-一款专为小米电视（Android TV）设计的儿童锁屏应用。
+一款专为小米电视（Android TV / PatchWall）设计的儿童锁屏应用。改造自开源 KidsLock：把原"计时→到期锁屏"升级为"**答题通关 → 自由窗口 → 到期再锁**"循环，题目按孩子的**年级 / 教材 / 科目 / 学习进度**自动生成。
 
 ## 功能
 
-- **开机自启**：电视开机后自动启动计时（默认开启）
-- **后台默认运行**：无需手动操作，开机即按设定时长自动开始倒计时
-- **定时锁屏**：15/30/45/60/90/120 分钟六档可选，到时自动锁屏
-- **重启仍锁**：锁屏后即使关机重启，电视仍保持锁屏状态
-- **认字解锁**：答对五年级水平汉字拼音才能解锁
-- **家长PIN**：家长可用 PIN 码快速解锁（默认 1234）
+- **家长模式**：不弹出任何题目，正常使用电视。
+- **孩子模式**：
+  - 开机自动弹出题目（默认 3 道），**全部答对才放行**看电视；
+  - 错题即重做本轮（重新抽题），直到本轮全对；
+  - 每间隔 N 分钟（默认 10）再弹出题目，依次循环；
+  - 答完即时反馈，错题给出**参考答案 + 解析**。
+- **题目自适应**：内置人教版 5 年级语数英；支持 1–9 年级，弱项优先 + 间隔重复选题（掌握度越低 / 越久未练，越优先出现）。
+- **家长 PIN**：家长 PIN 可临时放行（默认 1234，建议修改）。
+- **防绕过**：全屏悬浮锁屏 + 拦截 HOME / 返回键 + 重启持久化（关机再开仍锁）。
 
 ## 安装方法
 
-### 方法一：U盘安装（推荐）
-
-1. 如果之前安装过旧版，建议先在电视上卸载旧版（防止旧版入口残留）
-2. 将新的 `kidslock-release.apk` 复制到 U盘
-3. U盘插入小米电视 USB 口
-4. 在电视上打开「高清播放器」或「文件管理」
-5. 找到 U盘中的 apk 文件，点击安装
-6. 安装前需在「设置 → 账号与安全」中开启「允许安装未知来源应用」
-
-> **提示**：安装完成后，在电视桌面或「全部应用」中找「儿童锁屏」图标。如果找不到，重启一次电视即可。
+### 方法一：GitHub Actions 自动出包（推荐，无需本地 Android Studio）
+1. 把本仓库推送到**你自己的** GitHub 仓库（不要推到上游 wplleo/kidslock）。
+2. 仓库 **Actions** 自动构建，完成后在 **Artifacts** 下载 `tv-quiz-lock-apk`，内含 `app-universal-debug.apk`。
+3. 打 Release 时 APK 也会自动附在 Release 资源里。
 
 ### 方法二：adb 安装
-
 ```bash
 adb connect <电视IP>:5555
-adb install kidslock-release.apk
+adb install app-universal-debug.apk
 ```
+
+### 方法三：U盘安装
+将 `app-universal-debug.apk` 拷贝到 U 盘，电视「文件管理」中找到并安装（需先开启「允许安装未知来源应用」）。
 
 ## 使用流程
 
-1. **首次打开**：从电视桌面或「全部应用 / 应用中心」找到「儿童锁屏」图标打开
+1. **首次打开**：电视桌面「全部应用」找到「儿童锁屏」图标打开。
 2. **设置参数**：
-   - 开机自启：已开启（默认）
-   - 观看时长：选择 15/30/45/60/90/120 分钟（默认30分钟）
-   - 解锁题数：3/5/10 题连续答对（默认3题）
-   - 家长PIN：默认 1234，建议修改
-3. **开始计时**：按「开始计时」按钮
-4. **自动锁屏**：时间到自动弹出锁屏界面
-5. **认字解锁**：
-   - 屏幕显示一个五年级水平汉字
-   - 4个拼音选项，用遥控器方向键选择，按确认键提交
-   - 答对继续，答错重置计数
-   - 连续答对指定题数后自动解锁
-6. **家长解锁**：在锁屏界面选「家长解锁」，输入4位PIN码
+   - 模式：家长模式 / 孩子模式
+   - 年级：1–9（默认 5）
+   - 教材：如「人教版」（默认）
+   - 间隔分钟：看电视多久后再次弹题（默认 10）
+   - 题数：每轮题目数（默认 3）
+   - 家长 PIN：默认 1234，建议修改
+3. **开启孩子模式（立即锁屏）** → 开机即弹题；或保持家长模式使用。
+4. **答题解锁**：屏幕显示科目 + 题干 + 4 个选项，遥控器方向键选择、确认提交；本轮全对方可进入电视。
+5. **家长解锁**：锁屏界面输入 PIN 临时放行。
 
 ## 锁屏防绕过机制
 
-- 锁屏时显示全屏悬浮窗覆盖层，遮挡桌面
-- 按遥控器 HOME 键 → 被悬浮窗拦截，无法回到桌面
-- 按返回键 → 无效
-- 关机重启 → 锁屏界面自动弹出
-- 计时器与锁屏状态保存在 SharedPreferences 中，重启不丢失
+- 全屏悬浮窗覆盖层遮挡桌面
+- 遥控器 HOME 键被拦截，无法回桌面
+- 返回键无效
+- 关机重启 → 锁屏界面自动弹出（状态存 SharedPreferences）
 
 ## 项目结构
 
 ```
-电视锁屏/
-├── app/src/main/
-│   ├── AndroidManifest.xml          # 清单文件
-│   ├── java/com/kidslock/app/
-│   │   ├── MainActivity.java        # 设置界面
-│   │   ├── LockScreenActivity.java  # 锁屏认字界面
-│   │   ├── LockService.java         # 计时前台服务
-│   │   ├── BootReceiver.java        # 开机自启接收器
-│   │   ├── CharacterBank.java       # 五年级汉字题库（140字）
-│   │   └── PrefManager.java         # 持久化状态管理
-│   └── res/
-│       ├── layout/                   # 布局XML
-│       ├── drawable/                 # 按钮选择器、图标、TV banner
-│       └── values/                   # 颜色、尺寸、字符串、主题
-├── kidslock-release.apk              # 签名正式版 APK
-└── kidslock-debug.apk                # 调试版 APK
+kidslock/
+├─ .github/workflows/build.yml    # GitHub Actions 自动构建 APK
+├─ app/src/main/
+│  ├─ AndroidManifest.xml         # 清单（含 INTERNET 权限）
+│  ├─ java/com/kidslock/app/
+│  │  ├─ MainActivity.java        # 设置界面（模式/年级/教材/间隔/题数）
+│  │  ├─ LockScreenActivity.java  # 通用答题卡（科目+题干+选项+参考答案）
+│  │  ├─ LockService.java         # 自由窗口循环（通关→计时→再锁）
+│  │  ├─ BootReceiver.java        # 开机自启（孩子模式即锁）
+│  │  ├─ QuestionBank.java        # 通用题库（替代原 CharacterBank）
+│  │  └─ PrefManager.java         # 模式/年级/教材/间隔/掌握度持久化
+│  ├─ assets/questions.json       # 内置题库（人教版5年级语数英，24题）
+│  └─ res/layout/                 # 布局（锁屏页加科目标签/题干区；设置页重写）
+└─ （构建产物）app-universal-debug.apk
 ```
 
 ## 技术参数
@@ -82,28 +75,21 @@ adb install kidslock-release.apk
 - 最低支持：Android 5.0 (API 21)
 - 目标版本：Android 13 (API 33)
 - 编译版本：API 34
-- 签名密钥有效期：10000天
-- 架构：armeabi-v7a / arm64-v8a（覆盖所有小米电视）
+- 架构：armeabi-v7a / arm64-v8a（universal 包覆盖所有小米电视）
 
 ## 编译方法
 
-```bash
-# 需要 JDK 17 和 Android SDK
-export JAVA_HOME=<JDK路径>
-export ANDROID_HOME=<SDK路径>
-
-gradle assembleRelease
-
-# 签名（使用自己的 keystore）
-zipalign -f 4 app-universal-release-unsigned.apk aligned.apk
-apksigner sign --ks <你的.keystore> --out kidslock-release.apk aligned.apk
-```
-
-> 已发布的 kidslock-release.apk 由作者签名，如需自行编译发布请替换为自己的签名密钥。
+- **自动**：推送到 GitHub 即由 Actions 用 AGP 8.2 + Gradle 8.4 + JDK 17 构建（debug 密钥签名，可 sideload）。产物为 `app-universal-debug.apk`（开启了 ABI splits + universalApk）。
+- **本地**：需 JDK 17 与 Android SDK（platforms;android-34、build-tools;34.0.0）。
+  ```bash
+  export JAVA_HOME=<JDK17路径>
+  export ANDROID_HOME=<SDK路径>
+  ./gradle-dist/bin/gradle assembleDebug   # 或自备 wrapper: ./gradlew assembleDebug
+  ```
+- **正式签名发布**：配自有 keystore 走 `assembleRelease`，产物 `app-universal-release.apk`。
 
 ## 注意事项
 
-- 安装后需在电视设置中给予「开机自启」和「后台运行」权限
-- 小米电视的「安全中心」可能会清理后台，需将本应用加入白名单
-- 部分小米电视系统可能限制 HOME launcher 替换，如遇问题请使用家长PIN解锁
-- 汉字题库包含约 140 个五年级水平汉字，随机出题
+- 安装后需给予「开机自启」「后台运行」权限；小米「安全中心」可能清理后台，请将本应用加入白名单。
+- 内置题库默认 5 年级人教版语数英；扩充题库见上层 `tv-quiz-lock/` 文档（后台 `/ui` 或批量 JSON 导入）。
+- 题库答案经人工核对；若接入 LLM 生成变式，须保证参考答案正确。

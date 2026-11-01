@@ -30,11 +30,16 @@ public class BootReceiver extends BroadcastReceiver {
 
         PrefManager pref = new PrefManager(context);
 
-        // 如果已经处于锁定状态，直接弹锁屏
+        // 家长模式：不弹题，直接返回
+        if (!pref.isChildMode()) {
+            Log.i(TAG, "Parent mode, no lock on boot");
+            return;
+        }
+
+        // 已经处于锁定状态 → 直接弹锁屏
         if (pref.isLocked()) {
             Log.i(TAG, "Device was locked, showing lock screen");
             pref.setHomeAliasEnabled(context, true);
-            // 启动守护服务，防止按 HOME / 切换应用绕过锁屏
             startLockService(context);
             Intent lockIntent = new Intent(context, LockScreenActivity.class);
             lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
@@ -44,32 +49,18 @@ public class BootReceiver extends BroadcastReceiver {
             return;
         }
 
-        // 如果计时器正在运行
-        if (pref.isTimerActive()) {
-            if (pref.isTimerExpired()) {
-                // 计时已超时 → 锁屏
-                Log.i(TAG, "Timer expired during boot, locking");
-                pref.setLocked(true);
-                pref.setHomeAliasEnabled(context, true);
-                pref.stopTimer();
-                Intent lockIntent = new Intent(context, LockScreenActivity.class);
-                lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                        | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                context.startActivity(lockIntent);
-            } else {
-                // 计时未超时 → 恢复计时服务
-                Log.i(TAG, "Timer still running, resuming service");
-                startLockService(context);
-            }
-            return;
-        }
-
-        // 开机自启 → 启动计时
+        // 开机自启（孩子模式）→ 立即锁屏，先答题后观看
         if (pref.isAutoStart()) {
-            Log.i(TAG, "Auto start enabled, starting timer");
-            int minutes = pref.getWatchLimitMinutes();
-            pref.startTimer(minutes);
+            Log.i(TAG, "Child mode auto start, locking now");
+            pref.setLocked(true);
+            pref.setHomeAliasEnabled(context, true);
+            pref.stopTimer();
             startLockService(context);
+            Intent lockIntent = new Intent(context, LockScreenActivity.class);
+            lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+            context.startActivity(lockIntent);
         }
     }
 

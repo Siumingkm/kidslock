@@ -5,18 +5,26 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 
+import org.json.JSONObject;
+
 /**
  * SharedPreferences 封装：管理所有持久化设置和状态。
  * 状态在重启后仍然保留，保证锁屏不会被绕过。
+ *
+ * 改造新增：运行模式(CHILD/PARENT)、年级、教材版、出题间隔、知识点掌握度。
  */
 public class PrefManager {
+
+    public static final String MODE_CHILD = "CHILD";
+    public static final String MODE_PARENT = "PARENT";
 
     private static final String PREF_NAME = "kids_lock_prefs";
     private final SharedPreferences prefs;
 
     // Keys
     private static final String KEY_AUTO_START = "auto_start";
-    private static final String KEY_WATCH_LIMIT_MIN = "watch_limit_min";
+    private static final String KEY_WATCH_LIMIT_MIN = "watch_limit_min"; // 兼容保留
+    private static final String KEY_INTERVAL_MIN = "interval_min";
     private static final String KEY_UNLOCK_COUNT = "unlock_count";
     private static final String KEY_IS_LOCKED = "is_locked";
     private static final String KEY_TIMER_ACTIVE = "timer_active";
@@ -24,12 +32,18 @@ public class PrefManager {
     private static final String KEY_PARENT_PIN = "parent_pin";
     private static final String KEY_PIN_FAIL_COUNT = "pin_fail_count";
     private static final String KEY_PIN_LOCK_UNTIL = "pin_lock_until";
+    private static final String KEY_MODE = "mode";
+    private static final String KEY_GRADE = "grade";
+    private static final String KEY_EDITION = "edition";
+    private static final String KEY_MASTERY = "mastery_json";
 
     // Defaults
     private static final boolean DEFAULT_AUTO_START = true;
-    private static final int DEFAULT_WATCH_LIMIT_MIN = 30;
+    private static final int DEFAULT_INTERVAL_MIN = 10;
     private static final int DEFAULT_UNLOCK_COUNT = 3;
     private static final String DEFAULT_PARENT_PIN = "1234";
+    private static final int DEFAULT_GRADE = 5;
+    private static final String DEFAULT_EDITION = "人教版";
     private static final int MAX_PIN_FAILS = 5;
     private static final long PIN_LOCKOUT_MS = 30_000;
 
@@ -46,13 +60,44 @@ public class PrefManager {
         prefs.edit().putBoolean(KEY_AUTO_START, enabled).apply();
     }
 
-    // --- Watch Limit ---
-    public int getWatchLimitMinutes() {
-        return prefs.getInt(KEY_WATCH_LIMIT_MIN, DEFAULT_WATCH_LIMIT_MIN);
+    // --- Mode ---
+    public String getMode() {
+        return prefs.getString(KEY_MODE, MODE_CHILD);
     }
 
-    public void setWatchLimitMinutes(int minutes) {
-        prefs.edit().putInt(KEY_WATCH_LIMIT_MIN, minutes).apply();
+    public void setMode(String mode) {
+        prefs.edit().putString(KEY_MODE, mode).apply();
+    }
+
+    public boolean isChildMode() {
+        return MODE_CHILD.equals(getMode());
+    }
+
+    // --- Grade / Edition ---
+    public int getGrade() {
+        return prefs.getInt(KEY_GRADE, DEFAULT_GRADE);
+    }
+
+    public void setGrade(int grade) {
+        prefs.edit().putInt(KEY_GRADE, grade).apply();
+    }
+
+    public String getEdition() {
+        return prefs.getString(KEY_EDITION, DEFAULT_EDITION);
+    }
+
+    public void setEdition(String edition) {
+        prefs.edit().putString(KEY_EDITION, edition).apply();
+    }
+
+    // --- Interval (自由观看窗口，分钟) ---
+    public int getIntervalMinutes() {
+        int v = prefs.getInt(KEY_INTERVAL_MIN, DEFAULT_INTERVAL_MIN);
+        return v > 0 ? v : DEFAULT_INTERVAL_MIN;
+    }
+
+    public void setIntervalMinutes(int minutes) {
+        prefs.edit().putInt(KEY_INTERVAL_MIN, minutes).apply();
     }
 
     // --- Unlock Question Count ---
@@ -73,7 +118,7 @@ public class PrefManager {
         prefs.edit().putBoolean(KEY_IS_LOCKED, locked).apply();
     }
 
-    // --- Timer ---
+    // --- Timer (复用为"自由观看窗口") ---
     public boolean isTimerActive() {
         return prefs.getBoolean(KEY_TIMER_ACTIVE, false);
     }
@@ -131,7 +176,7 @@ public class PrefManager {
         prefs.edit().putInt(KEY_PIN_FAIL_COUNT, 0).putLong(KEY_PIN_LOCK_UNTIL, 0).apply();
     }
 
-    // --- Helper: start timer ---
+    // --- 自由窗口计时：复用原计时机制 ---
     public void startTimer(int minutes) {
         long endTime = System.currentTimeMillis() + (long) minutes * 60 * 1000;
         setTimerActive(true);
@@ -146,6 +191,32 @@ public class PrefManager {
 
     public boolean isTimerExpired() {
         return isTimerActive() && System.currentTimeMillis() >= getTimerEndTime();
+    }
+
+    // --- 知识点掌握度（进度模型） ---
+    public String getMasteryJson() {
+        return prefs.getString(KEY_MASTERY, "{}");
+    }
+
+    /**
+     * 记录一次答题结果，更新知识点掌握度(0~1)：
+     * 答对 +0.15（封顶1），答错 -0.2（保底0）。
+     */
+    public void recordAnswer(String knowledge, boolean correct) {
+        if (knowledge == null || knowledge.isEmpty()) return;
+        JSONObject m;
+        try {
+            m = new JSONObject(prefs.getString(KEY_MASTERY, "{}"));
+        } catch (Exception e) {
+            m = new JSONObject();
+        }
+        double v = m.optDouble(knowledge, 0.5);
+        v = correct ? Math.min(1.0, v + 0.15) : Math.max(0.0, v - 0.2);
+        try {
+            m.put(knowledge, v);
+        } catch (Exception ignore) {
+        }
+        prefs.edit().putString(KEY_MASTERY, m.toString()).apply();
     }
 
     /**
